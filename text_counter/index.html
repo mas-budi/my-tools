@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Counter Package</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background-color: #e5ecf3; }
+        .container { max-width: 600px; margin: auto; background: #CED4DA; padding: 20px;  border: 1px solid #a2a1a1; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        position: relative; }
+        .back-btn {
+        position: absolute; top: 15px; left: 15px; text-decoration: none; color: #007bff; font-size: 16px; font-weight: 600; transition: color 0.3s; }
+        .back-btn:hover { color: #0056b3; text-decoration: underline; }
+        h2 { color: #2c3e50; text-align: center; }
+        textarea { width: 100%; height: 275px; padding: 15px; border: 1px solid #a2a1a1; border-radius: 4px; box-sizing: border-box; font-size: 14px; color: #3f3f3f; resize: vertical; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; text-align: center; }
+        .stat-box { background: #e8f4fd; padding: 10px;  border: 1px solid #a2a1a1; border-radius: 5px; }
+        .stat-label { display: block; font-size: 12px; color: #666; text-transform: uppercase; }
+        .stat-value { font-size: 20px; font-weight: bold; color: #007bff; }
+        .clear-btn { margin-top: 15px; padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .clear-btn:hover { background: #c0392b; }
+    
+    /* Aturan Utama (Default untuk PC/Layar Lebar) */
+.container {
+    max-width: 800px; /* Saya lebarkan sedikit agar nyaman di PC */
+    width: 90% ;      /* Agar tidak mentok ke pinggir layar */
+    margin: 5px auto;
+    position: relative;
+    padding-top: 50px;
+    box-sizing: border-box; /* Sangat penting agar padding tidak merusak lebar */
+}
+
+/* Aturan Khusus Mobile (Layar di bawah 600px) */
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* Kurangi jarak pinggir body */
+    }
+    
+    .container {
+        width: 100%;    /* Di HP, gunakan seluruh lebar layar yang tersedia */
+        padding: 15px;
+        padding-top: 60px; /* Ruang lebih untuk tombol back di layar kecil */
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr; /* Di HP, kotak statistik berjejer ke bawah agar tidak sempit */
+    }
+    
+    h2 {
+        font-size: 1.2rem; /* Perkecil sedikit ukuran judul di HP */
+    }
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-btn">&larr; Kembali</a>
+    <h2>Character and Word Counter</h2>
+    <textarea id="textInput" placeholder="Ketik atau tempel teks di sini..."></textarea>
+    
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="stat-label">Karakter</span>
+            <span id="charCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Kata</span>
+            <span id="wordCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Waktu Baca</span>
+            <span id="readingTime" class="stat-value">0</span><span style="font-size: 14px; color:#007bff"> menit</span>
+        </div>
+    </div>
+
+    <button class="clear-btn" onclick="clearText()">Hapus Semua</button>
+</div>
+
+<script>
+    const textInput = document.getElementById('textInput');
+    const charCount = document.getElementById('charCount');
+    const wordCount = document.getElementById('wordCount');
+    const readingTime = document.getElementById('readingTime');
+
+    textInput.addEventListener('input', function() {
+        const text = this.value;
+
+        // 1. Hitung Karakter (Termasuk spasi)
+        charCount.innerText = text.length;
+
+        // 2. Hitung Kata (Word)
+        // Kita gunakan regex /\S+/ yang artinya mencari kumpulan karakter yang bukan spasi
+        const words = text.trim().split(/\s+/).filter(item => item !== "");
+        const totalWords = words.length;
+        wordCount.innerText = totalWords;
+
+        // 3. Hitung Waktu Baca (Asumsi 200 kata per menit)
+        // Hasilnya dibulatkan ke 1 angka di belakang koma agar simpel
+        const time = totalWords / 180;
+        readingTime.innerText = time.toFixed(1);
+    });
+
+    function clearText() {
+        textInput.value = '';
+        charCount.innerText = '0';
+        wordCount.innerText = '0';
+        readingTime.innerText = '0';
+    }
+</script>
+
+</body>
+</html>

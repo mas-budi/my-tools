@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional File Hasher</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #E1E8EF; min-height: 100vh; display: flex; align-items: top; }
+        .card { border: none; margin: 25px 1px 1px 1px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        
+        /* Animasi Progress Bar agar halus */
+        .progress-bar {
+            transition: width 0.4s ease-in-out;
+        }
+
+        .hash-output { 
+            background: #1a1d20; 
+            color: #0dfd05; 
+            padding: 15px; 
+            border-radius: 10px; 
+            word-break: break-all; 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 1.1rem;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-execute { 
+            background: linear-gradient(45deg, #6610f2, #6f42c1); 
+            color: white; 
+            border: none; 
+            transition: 0.3s; 
+        }
+        .btn-execute:hover { 
+            background: linear-gradient(45deg, #520dc2, #593196); 
+            color: white; 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(102, 16, 242, 0.3);
+        }
+        .btn-execute:disabled { opacity: 0.7; transform: none; }
+
+        #progressBarContainer { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-primary mb-0"><i class="bi bi-shield-check me-2"></i>File Hash Generator</h4>
+                    <a href="https://tools.jurnalpc.com/" class="btn btn-light btn-sm text-muted">← Home</a>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Pilih File</label>
+                        <input type="file" id="fileInput" class="form-control form-control-lg">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Algoritma</label>
+                        <select id="algoSelect" class="form-select form-select-lg">
+                            <option value="SHA-256">SHA-256</option>
+                            <option value="SHA-512">SHA-512</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button id="executeBtn" class="btn btn-execute btn-lg fw-bold">
+                        <i class="bi bi-gear-fill me-2" id="btnIcon"></i> 
+                        <span id="btnText">GENERATE HASH</span>
+                    </button>
+                </div>
+
+                <div id="progressBarContainer" class="mt-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-primary" id="statusLabel">Initializing...</span>
+                        <span id="progressPercent" class="fw-bold text-primary">0%</span>
+                    </div>
+                    <div class="progress" style="height: 12px; border-radius: 10px; background-color: #e9ecef;">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="resultArea" class="mt-4" style="display: none;">
+                    <hr class="my-4">
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span class="fw-bold text-secondary">Checksum Result:</span>
+                            <span class="badge bg-dark" id="algoLabel"></span>
+                        </label>
+                        <div id="hashResult" class="hash-output mb-3"></div>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button class="btn btn-outline-dark w-100" onclick="copyToClipboard()">
+                                    <i class="bi bi-clipboard me-2"></i>Salin
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-danger w-100" onclick="resetForm()">
+                                    <i class="bi bi-trash me-2"></i>Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-lock-fill me-1"></i> Keamanan Terjamin: File tidak dikirim ke server (Client-Side).
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const executeBtn = document.getElementById('executeBtn');
+    const btnIcon = document.getElementById('btnIcon');
+    const btnText = document.getElementById('btnText');
+    const algoSelect = document.getElementById('algoSelect');
+    const resultArea = document.getElementById('resultArea');
+    const hashResult = document.getElementById('hashResult');
+    const progressBarContainer = document.getElementById('progressBarContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const statusLabel = document.getElementById('statusLabel');
+    const algoLabel = document.getElementById('algoLabel');
+
+    executeBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert("Silakan pilih file terlebih dahulu!");
+            return;
+        }
+
+        // Tampilan Loading di Tombol
+        executeBtn.disabled = true;
+        btnIcon.className = "bi bi-hourglass-split me-2";
+        btnText.textContent = "PROCESSING...";
+        
+        // Reset UI Result & Bar
+        resultArea.style.display = 'none';
+        progressBarContainer.style.display = 'block';
+        updateProgress(0);
+
+        const algo = algoSelect.value;
+        algoLabel.textContent = algo;
+        
+        try {
+            // FASE 1: Membaca File (0% - 80%)
+            statusLabel.textContent = "Reading File...";
+            const arrayBuffer = await readFileWithProgress(file);
+            
+            // FASE 2: Kalkulasi (80% - 100%)
+            // Angka 85 adalah 'checkpoint' visual saat pembacaan selesai dan kalkulasi dimulai
+            updateProgress(85);
+            statusLabel.textContent = "Calculating " + algo + "...";
+            
+            // Artificial delay agar mata manusia bisa melihat status "Calculating"
+            await new Promise(r => setTimeout(r, 600));
+            
+            const hashBuffer = await crypto.subtle.digest(algo, arrayBuffer);
+            
+            // Konversi ke Hex
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // Selesai
+            updateProgress(100);
+            statusLabel.textContent = "Complete!";
+            
+            setTimeout(() => {
+                hashResult.textContent = hashHex;
+                resultArea.style.display = 'block';
+                progressBarContainer.style.display = 'none';
+                
+                // Kembalikan tombol ke sedia kala
+                executeBtn.disabled = false;
+                btnIcon.className = "bi bi-gear-fill me-2";
+                btnText.textContent = "GENERATE HASH";
+            }, 500);
+
+        } catch (err) {
+            alert("Terjadi kesalahan teknis.");
+            resetForm();
+        }
+    });
+
+    function readFileWithProgress(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.onprogress = (data) => {
+                if (data.lengthComputable) {
+                    // Kita alokasikan 80% progres untuk pembacaan file
+                    const progress = Math.round((data.loaded / data.total) * 80);
+                    updateProgress(progress);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function updateProgress(val) {
+        progressBar.style.width = val + '%';
+        progressPercent.textContent = val + '%';
+    }
+
+    function copyToClipboard() {
+        const text = hashResult.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Hash berhasil disalin ke clipboard!");
+        });
+    }
+
+    function resetForm() {
+        fileInput.value = '';
+        resultArea.style.display = 'none';
+        progressBarContainer.style.display = 'none';
+        executeBtn.disabled = false;
+        btnIcon.className = "bi bi-gear-fill me-2";
+        btnText.textContent = "GENERATE HASH";
+        updateProgress(0);
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Generator Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #e0e0e0;
+            --main-color: #3f51b5; /* Biru Indigo */
+            --shadow-light: #ffffff;
+            --shadow-dark: #b8b8b8;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #e5ecf3;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #afc8e1;
+            padding: 35px;
+            border-radius: 25px;
+            box-shadow: 10px 10px 20px var(--shadow-dark), 
+                        -10px -10px 20px var(--shadow-light);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--bg);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .back-button:active {
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), 
+                        inset -3px -3px 7px var(--shadow-light);
+            transform: scale(0.95);
+        }
+
+        .back-button svg {
+            fill: var(--text-color);
+            width: 30px;
+            height: 30px;
+        }
+
+        h2 {
+            color: var(--main-color);
+            margin-bottom: 25px;
+            font-size: 28px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .input-group, .color-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #666;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            background-color: var(--bg);
+            font-size: 16px;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: inset 2px 2px 5px var(--shadow-dark), 
+                        inset -2px -2px 5px var(--shadow-light),
+                        0 0 0 2px var(--main-color); /* Highlight fokus */
+        }
+
+        .color-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 5px 5px 10px var(--shadow-dark), 
+                        -5px -5px 10px var(--shadow-light);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+        }
+
+        .color-option:active {
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), 
+                        inset -3px -3px 7px var(--shadow-light);
+        }
+
+        .color-option.black { background-color: #000000; }
+        .color-option.blue { background-color: #020297; }
+
+        #qrcode-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            min-height: 220px; /* Minimal tinggi agar tidak bergeser */
+        }
+
+        #qrcode {
+            background-color: white; /* Latar belakang putih untuk QR agar bisa discan */
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .download-button {
+            background-color: var(--main-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .download-button:active {
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), 
+                        inset -3px -3px 7px var(--shadow-light);
+            transform: scale(0.98);
+        }
+
+        /* Responsif */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: none;
+            }
+            .back-button {
+                top: 10px;
+                left: 10px;
+                width: 35px;
+                height: 35px;
+            }
+            h2 { font-size: 24px; margin-top: 30px; }
+            input[type="text"] { padding: 12px 1px 12px 8px; }
+            .download-button { padding: 10px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-button" aria-label="Kembali ke Halaman Utama">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" />
+        </svg>
+    </a>
+
+    <h2>QR Generator</h2>
+
+    <div class="input-group">
+        <label for="qrTextInput">Teks / URL:</label>
+        <input type="text" id="qrTextInput" placeholder="Ketik teks atau URL..." oninput="generateQR()">
+    </div>
+
+    <div class="color-group">
+        <label>Warna QR:</label>
+        <div class="color-options">
+            <div class="color-option black selected" data-color="#000000" onclick="selectColor(this, '#000000')"></div>
+            <div class="color-option blue" data-color="#020297" onclick="selectColor(this, '#020297')"></div>
+        </div>
+    </div>
+
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+    </div>
+
+    <button class="download-button" onclick="downloadQR()">Download QR Code</button>
+</div>
+
+<script>
+    // Inisialisasi QR Code
+    let qrcodeInstance;
+    let selectedColor = "#000000"; // Default warna hitam
+
+    function initQRCode() {
+        if (qrcodeInstance) {
+            qrcodeInstance.clear(); // Hapus QR lama jika sudah ada
+            document.getElementById("qrcode").innerHTML = ""; // Bersihkan div
+        }
+        qrcodeInstance = new QRCode(document.getElementById("qrcode"), {
+            width: 200,
+            height: 200,
+            colorDark: selectedColor, // Gunakan warna yang dipilih
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        generateQR(); // Generate QR pertama kali
+    }
+
+    function generateQR() {
+        const data = document.getElementById("qrTextInput").value;
+        if (data) {
+            qrcodeInstance.makeCode(data);
+        } else {
+            // Tampilkan QR kosong atau pesan jika input kosong
+            qrcodeInstance.clear();
+            // Anda bisa tambahkan pesan di div qrcode jika diinginkan
+        }
+    }
+
+    function selectColor(element, color) {
+        // Hapus kelas 'selected' dari semua opsi warna
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        // Tambahkan kelas 'selected' ke opsi yang diklik
+        element.classList.add('selected');
+        
+        selectedColor = color;
+        // Inisialisasi ulang QR dengan warna baru
+        initQRCode();
+    }
+
+    function downloadQR() {
+    // 1. Dapatkan elemen canvas asli dari library
+    const originalCanvas = document.querySelector('#qrcode canvas');
+    
+    if (originalCanvas) {
+        // 2. Tentukan ukuran padding (misal 20px)
+        const padding = 20;
+        const newCanvas = document.createElement('canvas');
+        const ctx = newCanvas.getContext('2d');
+
+        // 3. Set ukuran canvas baru (ukuran asli + padding kiri kanan/atas bawah)
+        newCanvas.width = originalCanvas.width + (padding * 2);
+        newCanvas.height = originalCanvas.height + (padding * 2);
+
+        // 4. Warnai latar belakang canvas baru dengan putih
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+        // 5. Gambar QR Code asli ke tengah-tengah canvas baru
+        ctx.drawImage(originalCanvas, padding, padding);
+
+        // 6. Proses Download
+        const dataURL = newCanvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = dataURL;
+        a.download = "my_qrcode.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } else {
+        alert("QR Code belum dibuat!");
+    }
+}
+
+    // Panggil initQRCode saat halaman pertama kali dimuat
+    window.onload = initQRCode;
+</script>
+
+</body>
+</html>

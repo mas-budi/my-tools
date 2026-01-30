@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jpeg Compressor</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+body {
+    font-family: system-ui, sans-serif;
+    background: #e5ecf3;
+    padding: 20px 10px 10px 10px;
+}
+
+.container {
+    max-width: 560px;
+    margin: auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.08);
+}
+
+a {
+    text-decoration: none; /* Menghilangkan garis bawah */
+    font-size: 15px;      /* Mengatur ukuran font */
+    color: rgb(2, 2, 158);          /* Opsional: Mengatur warna agar lebih jelas */
+}
+
+
+
+h2 {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+input, button {
+    width: 100%;
+    margin: 15px 0;
+}
+
+button {
+    padding: 12px;
+    background: linear-gradient(135deg, #2b2bcb, #4a4ae6);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.progress {
+    height: 18px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #2b2bcb, #4a4ae6);
+    transition: width .2s;
+}
+
+.log {
+    font-size: 13px;
+    margin-top: 15px;
+    background: #f8f8f8;
+    padding: 10px;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+small {
+    color: #666;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <a href="/"> <strong>BACK</strong></a>
+    <h2>Jpeg Compressor</h2>
+
+    <input type="file" id="files" accept="image/*" multiple>
+    <small>Maksimal 10 file</small>
+
+    <label>Kualitas: <strong><span id="qVal">75</span>%</strong></label>
+    <input type="range" id="quality" min="30" max="100" value="75">
+
+    <button onclick="start()">Compress → ZIP</button>
+
+    <div class="progress">
+        <div class="progress-bar" id="bar"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const MAX_FILES = 10;
+
+// ===================== UI =====================
+const qualityInput = document.getElementById('quality');
+const qVal = document.getElementById('qVal');
+qualityInput.oninput = () => qVal.textContent = qualityInput.value;
+
+// ===================== WORKER CODE =====================
+const workerCode = `
+self.onmessage = async e => {
+    const { file, quality } = e.data;
+
+    const bitmap = await createImageBitmap(file);
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0);
+
+    const blob = await canvas.convertToBlob({
+        type: 'image/jpeg',
+        quality: quality
+    });
+
+    self.postMessage({
+        blob,
+        name: file.name
+    });
+};
+`;
+
+const workerURL = URL.createObjectURL(
+    new Blob([workerCode], { type: 'text/javascript' })
+);
+
+// ===================== MAIN PROCESS =====================
+async function start() {
+    const files = [...document.getElementById('files').files];
+
+    if (!files.length) {
+        alert('Pilih minimal satu file');
+        return;
+    }
+
+    if (files.length > MAX_FILES) {
+        alert(`Maksimal ${MAX_FILES} file saja`);
+        return;
+    }
+
+    const zip = new JSZip();
+    const bar = document.getElementById('bar');
+    const log = document.getElementById('log');
+
+    bar.style.width = '0%';
+    log.innerHTML = '';
+
+    let done = 0;
+
+    files.forEach(file => {
+        const worker = new Worker(workerURL);
+
+        worker.postMessage({
+            file,
+            quality: qualityInput.value / 100
+        });
+
+        worker.onmessage = e => {
+            zip.file('compressed_' + e.data.name, e.data.blob);
+
+            done++;
+            bar.style.width = Math.round((done / files.length) * 100) + '%';
+
+            log.innerHTML += `✔ ${e.data.name}<br>`;
+
+            worker.terminate();
+
+            if (done === files.length) {
+                finalize(zip);
+            }
+        };
+    });
+}
+
+// ===================== ZIP & DOWNLOAD =====================
+function finalize(zip) {
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'compressed-images.zip';
+        a.click();
+    });
+}
+</script>
+
+</body>
+</html>
+
